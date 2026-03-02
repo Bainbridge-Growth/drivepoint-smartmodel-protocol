@@ -143,23 +143,22 @@ imports:
 
 ## Repository Structure
 
+This repo contains the protocol specification only.
+
 ```
-drivepoint-smartmodel-protocol/    ← this repo
+drivepoint-smartmodel-protocol/    ← this repo (spec + protocol skill)
   protocol/
     v6.0/
       smartmodel-skill.md          ← protocol skill (agent instructions)
   README.md
-
-drivepoint-smartmodel-templates/   ← separate repo
-  13wk-cashflow/
-    v1.0.0/
-      smartmodel_13wk_cashflow_v1.0.0.xlsx
-      skills/
-        13wk-cashflow-skill.md
-      imports/
-        imports.yaml
-      README.md
 ```
+
+Related repos:
+
+| Repo | Purpose |
+|------|---------|
+| [drivepoint-smartmodel-plugin](https://github.com/Bainbridge-Growth/drivepoint-smartmodel-plugin) | Claude plugin — install SmartModel grammar in any Claude session |
+| [drivepoint-smartmodel-templates](https://github.com/Bainbridge-Growth/drivepoint-smartmodel-templates) | Template workbooks, root template, and generation tools |
 
 ---
 
