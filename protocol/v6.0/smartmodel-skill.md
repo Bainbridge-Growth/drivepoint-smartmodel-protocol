@@ -1,6 +1,13 @@
+---
+name: smartmodel-protocol
+description: Loads the SmartModel Protocol v6.0 grammar. Use when working with any Drivepoint SmartModel Excel workbook — reading structure, populating data, navigating sheets, rolling forward, or answering questions about financial model content.
+user-invocable: false
+allowed-tools: Read, Grep, Glob
+---
+
 # SmartModel Protocol Skill — v6.0
 **Issuer**: Drivepoint (drivepoint.io)
-**Hosted at**: `https://raw.githubusercontent.com/drivepoint/smartmodel-protocol/main/protocol/v6.0/smartmodel-skill.md`
+**Hosted at**: `https://raw.githubusercontent.com/Bainbridge-Growth/drivepoint-smartmodel-protocol/main/protocol/v6.0/smartmodel-skill.md`
 **Loaded by**: Drivepoint Excel add-in on workbook open
 **Purpose**: Teach any AI agent the SmartModel grammar so it can read, navigate, assist with, and populate Drivepoint SmartModel workbooks
 
