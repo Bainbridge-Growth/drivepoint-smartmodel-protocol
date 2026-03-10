@@ -3,28 +3,33 @@
 **Version**: 6.0
 **Maintained by**: Drivepoint (drivepoint.io)
 
-The SmartModel Protocol is an open standard for AI-readable financial models built on Excel. A SmartModel is a standard `.xlsx` file that bundles machine-readable skill and configuration files inside its zip structure, making the workbook self-describing to any AI agent that knows how to read it.
+The SmartModel Protocol is an open standard for AI-readable financial models built on Excel. A SmartModel is a standard `.xlsx` workbook that follows a strict structural grammar — identifiers in column B, storage markers in column A, a date spine in row 2, and a Settings tab with model metadata. When the Drivepoint add-in opens a SmartModel, it fetches skills and import declarations from the server, giving the AI agent everything it needs to understand the model.
 
 ---
 
 ## How It Works
 
-An Excel `.xlsx` file is a zip archive. SmartModel extends that archive with a `smartmodel/` directory:
+A SmartModel workbook is a well-structured Excel file. Skills and import declarations live on the server, fetched at runtime by the authenticated add-in.
 
-```
-[workbook].xlsx
-  └── smartmodel/
-        ├── skills/
-        │     └── [template]-skill.md      ← agent instructions for this template
-        └── imports/
-              └── imports.yaml             ← data source declarations
-```
+**What's in the file:**
+- Settings tab — model identity, `settings.smartmodelSpec = "6.0"` (v6 detection gate)
+- Index tab — template registry maintained by the add-in
+- Schedule sheets (yellow) — primary financial modeling
+- Report sheets (blue) — derived outputs
+- R- sheets (default) — data import layer
+- WebExtension — embedded add-in reference (prompts install from AppSource)
 
-When the Drivepoint Excel add-in opens a SmartModel workbook, it:
-1. Extracts the bundled skill and imports files
-2. Loads the protocol skill (this repo) to give the agent universal SmartModel grammar
-3. Lazy-loads the template skill based on user intent
-4. Uses the imports declaration to populate R- sheets from connected data sources
+**What's on the server:**
+- Protocol skill — universal SmartModel grammar (this repo)
+- Template skills — template-specific instructions (one per template)
+- Import declarations — data source definitions for each template's R- sheets
+
+When the add-in opens a SmartModel workbook, it:
+1. Reads the Settings tab — `settings.smartmodelSpec = "6.0"` confirms v6
+2. Scans all sheets for `metadata___template_id` values
+3. Fetches protocol skill, template skills, and import declarations from the Drivepoint API
+4. Updates the Index tab with the template registry
+5. Passes skills to the AI agent on chat open
 
 The result: an AI agent that can navigate the model, populate it with live data, assist the user, and explain what the numbers mean — without being pre-trained on the specific template.
 
@@ -39,14 +44,29 @@ Universal grammar loaded for every SmartModel workbook. Teaches the agent:
 - Identifier conventions and naming rules
 - Storage markers and the input/result distinction
 - How to read and write data correctly
+- Multi-template workbook awareness
 
 **Hosted at:**
 ```
 https://raw.githubusercontent.com/Bainbridge-Growth/drivepoint-smartmodel-protocol/main/protocol/v6.0/smartmodel-skill.md
 ```
 
-### 2. Template Skills (per-template repo)
-Bundled inside each `.xlsx` file. Teach the agent the semantics of a specific template — what each section means, how to roll it forward, how imports are used, common tasks, and error handling. Invisible to external agents; readable only by the Drivepoint add-in.
+### 2. Template Skills (per-template, server-side)
+Served by the Drivepoint API based on `metadata___template_id` values found in each sheet. Teach the agent the semantics of a specific template — what each section means, how to roll it forward, how imports are used, common tasks, and error handling.
+
+---
+
+## Multi-Template Workbooks
+
+A working SmartModel typically contains 5–8 templates stitched together. Each schedule sheet declares its template:
+
+```
+B9:  metadata___name             → "13-Week Cash Flow"
+B10: metadata___template_id      → "13wk-cashflow"
+B11: metadata___template_version → "1.0.0"
+```
+
+The add-in collects unique template IDs across all sheets and fetches skills for all of them in one API call. Cross-template connections are standard Excel formulas — discovered at runtime, not declared in configuration.
 
 ---
 
@@ -69,7 +89,7 @@ Schedule sheets follow a strict row-by-row structure:
 | Rows | Zone | Content |
 |------|------|---------|
 | 1–8 | Header block | Title bar, date spine, period types, status, template title |
-| 9–15 | Metadata | Template identity (name, type, version, grain) |
+| 9–15 | Metadata | Template identity (name, template_id, version, grain) |
 | 17–21 | Settings | Template parameters (fiscal year dates, identifier structure) |
 | 23+ | Dimension registry | Catalog of modeled entities (SKUs, channels, etc.) |
 | 37+ | Measure registry | Catalog of tracked metrics |
@@ -96,32 +116,7 @@ storage marker │ machine identifier     │ human label    │ time-series dat
 
 ## Imports System
 
-Each template declares its data requirements in `smartmodel/imports/imports.yaml`:
-
-```yaml
-imports:
-  - id: import.collections
-    sheet: R-Collections
-    time_dimension:
-      field: collection_date
-      type: date
-      granularity: weekly
-    dimensions:
-      - name: channel
-        type: string
-    measures:
-      - name: amount
-        type: numeric
-        currency: USD
-    dp_query: |
-      SELECT collection_date, channel, amount
-      FROM `{project_id}.{tenant_id}.collections`
-    source_priority:
-      - drivepoint
-      - shopify
-    refresh: on_open
-    if_unavailable: retain_last_import
-```
+Import declarations define what external data each template needs. They are served by the Drivepoint API alongside template skills — not bundled in the file. Each import maps to one R- sheet.
 
 **Two fulfillment modes:**
 - **Without Drivepoint account**: Add-in fills R- sheets from locally connected sources or user populates manually
