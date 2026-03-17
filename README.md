@@ -26,10 +26,9 @@ A SmartModel workbook is a well-structured Excel file. Skills and import declara
 
 When the add-in opens a SmartModel workbook, it:
 1. Reads the Settings tab — `settings.smartmodelSpec = "6.0"` confirms v6
-2. Scans all sheets for `metadata___template_id` values
-3. Fetches protocol skill, template skills, and import declarations from the Drivepoint API
-4. Updates the Index tab with the template registry
-5. Passes skills to the AI agent on chat open
+2. Reads the Index tab template manifest (single table read — template IDs, versions, skill/import file references)
+3. Fetches protocol skill, template skills, and import declarations from the Drivepoint API in one bulk call
+4. Caches skills in memory, passes them to the AI agent on chat open
 
 The result: an AI agent that can navigate the model, populate it with live data, assist the user, and explain what the numbers mean — without being pre-trained on the specific template.
 
